@@ -71,6 +71,63 @@ export interface BaseNexura extends BaseProcess {
   numeroSadeSalida: string;
 }
 
+export interface Traslados extends BaseProcess {
+  sadeIngreso: string;
+  numeroActoSade: string;
+  planilla: string;
+  expediente: string;
+  fechaPlanilla: string;
+  actoAdministrativo: string;
+  numeroSadeSalida: string;
+}
+
+export interface Resoluciones extends BaseProcess {
+  sadeIngreso: string;
+  numeroActoSadeSalida: string;
+  planilla: string;
+  fechaPlanilla: string;
+  actoAdministrativo: string;
+  numeroSadeSalida: string;
+  expediente: string;
+}
+
+export interface Fiscalizacion extends BaseProcess {
+  planilla: string;
+  expediente: string;
+  actoAdministrativo: string;
+  fechaPlanillaIngreso: string;
+  proceso: string;
+  contribuyente: string;
+  impuesto: string;
+  estadoProceso: string;
+  resolucionSadeSalida: string;
+  fechaResolucionSade: string;
+  fechaEjecutoria: string;
+  semaforoVencimiento: 'verde' | 'amarillo' | 'rojo';
+}
+
+export interface Tutelas extends BaseProcess {
+  mes: string;
+  fechaAsignacion: string;
+  asuntoCorreo: string;
+  remitente: string;
+  fechaRespuestaPeticion: string;
+  fechaRespuestaJuridica: string;
+  observaciones: string;
+}
+
+export interface ConsolidadoBases extends BaseProcess {
+  numeroActoSade: string;
+  fechaActo: string;
+  anoIngreso: string;
+  mesIngreso: string;
+  item: string;
+  fechaRespuesta: string;
+  diasFaltantes: number;
+  tipoRespuesta: string;
+  observacion: string;
+}
+
 export interface ProcessSummary {
   total: number;
   pendientes: number;
