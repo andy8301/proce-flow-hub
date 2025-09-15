@@ -195,6 +195,106 @@ export function ResolucionesForm({ onSubmit, initialData, mode = 'create' }: Res
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="numeroSadeSalida"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>No de SADE de Salida</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="funcionarioEncargado"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Funcionario Encargado</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="tipoRenta"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Renta</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="vehicular">Vehicular</SelectItem>
+                        <SelectItem value="predial">Predial</SelectItem>
+                        <SelectItem value="industria_comercio">Industria y Comercio</SelectItem>
+                        <SelectItem value="otros">Otros</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="tipoTramite"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Trámite</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar trámite" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="resolucion">Resolución</SelectItem>
+                        <SelectItem value="auto">Auto</SelectItem>
+                        <SelectItem value="acta">Acta</SelectItem>
+                        <SelectItem value="circular">Circular</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="canalIngreso"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Canal de Ingreso</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar canal" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="presencial">Presencial</SelectItem>
+                        <SelectItem value="virtual">Virtual</SelectItem>
+                        <SelectItem value="telefono">Teléfono</SelectItem>
+                        <SelectItem value="correo">Correo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <div className="flex justify-end space-x-2">

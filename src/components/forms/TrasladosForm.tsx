@@ -233,6 +233,108 @@ export function TrasladosForm({ onSubmit, initialData, mode = 'create' }: Trasla
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="tipoTramite"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Trámite</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar trámite" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="traslado_interno">Traslado Interno</SelectItem>
+                        <SelectItem value="traslado_externo">Traslado Externo</SelectItem>
+                        <SelectItem value="revision">Revisión</SelectItem>
+                        <SelectItem value="fiscalizacion">Fiscalización</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="fechaVencimiento"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Fecha de Vencimiento</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Seleccionar fecha</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          className="pointer-events-auto"
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="canalIngreso"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Canal de Ingreso</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar canal" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="presencial">Presencial</SelectItem>
+                        <SelectItem value="virtual">Virtual</SelectItem>
+                        <SelectItem value="telefono">Teléfono</SelectItem>
+                        <SelectItem value="correo">Correo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="numeroSadeSalida"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número de SADE Salida</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <div className="flex justify-end space-x-2">
