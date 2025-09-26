@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, Filter, Download, Search } from "lucide-react";
+import { Edit, Filter, Download, Search } from "lucide-react";
 import { BaseProcess } from "@/types/processes";
 
 interface ProcessTableProps {
@@ -17,9 +17,10 @@ interface ProcessTableProps {
     label: string;
     render?: (item: BaseProcess) => React.ReactNode;
   }>;
+  onEdit?: (item: BaseProcess) => void;
 }
 
-export function ProcessTable({ title, description, data, columns }: ProcessTableProps) {
+export function ProcessTable({ title, description, data, columns, onEdit }: ProcessTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [semaforoFilter, setSemaforoFilter] = useState("all");
@@ -169,8 +170,13 @@ export function ProcessTable({ title, description, data, columns }: ProcessTable
                     </span>
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="sm">
-                      <Eye className="w-4 h-4" />
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => onEdit?.(item)}
+                      disabled={!onEdit}
+                    >
+                      <Edit className="w-4 h-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
