@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -82,6 +83,35 @@ export function BaseOlgaForm({ onSubmit, initialData, mode = 'create' }: BaseOlg
       observacionSade: initialData?.observacionSade || "",
     },
   });
+
+  // Función para calcular días pendientes
+  const calcularDiasPendientes = (fechaVencimiento: Date | undefined) => {
+    if (!fechaVencimiento) return 0;
+    const hoy = new Date();
+    const diffTime = fechaVencimiento.getTime() - hoy.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  // Función para obtener semáforo de vencimiento
+  const obtenerSemaforoVencimiento = (diasPendientes: number) => {
+    if (diasPendientes < 0) return { color: 'rojo', texto: 'Vencido' };
+    if (diasPendientes <= 5) return { color: 'amarillo', texto: 'Próximo a vencer' };
+    return { color: 'verde', texto: 'En tiempo' };
+  };
+
+  // Función para obtener semáforo de expedientes
+  const obtenerSemaforoExpedientes = (estado: string) => {
+    switch (estado) {
+      case 'cerrado': return { color: 'verde', texto: 'Cerrado' };
+      case 'en_proceso': return { color: 'amarillo', texto: 'En proceso' };
+      default: return { color: 'rojo', texto: 'Pendiente' };
+    }
+  };
+
+  const fechaVencimiento = form.watch('fechaVencimiento');
+  const diasPendientes = calcularDiasPendientes(fechaVencimiento);
+  const semaforoVencimiento = obtenerSemaforoVencimiento(diasPendientes);
+  const semaforoExpedientes = obtenerSemaforoExpedientes('pendiente');
 
   const handleSubmit = (data: BaseOlgaFormData) => {
     const processData: BaseOlga = {
@@ -713,6 +743,42 @@ export function BaseOlgaForm({ onSubmit, initialData, mode = 'create' }: BaseOlg
                   </FormItem>
                 )}
               />
+            </div>
+
+            {/* Campos calculados y de estado */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Días Pendientes</label>
+                <div className="mt-1">
+                  <Badge variant={diasPendientes < 0 ? "destructive" : diasPendientes <= 5 ? "secondary" : "default"}>
+                    {diasPendientes} días
+                  </Badge>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Semáforo de Vencimiento</label>
+                <div className="mt-1">
+                  <Badge 
+                    variant={semaforoVencimiento.color === 'rojo' ? "destructive" : 
+                            semaforoVencimiento.color === 'amarillo' ? "secondary" : "default"}
+                  >
+                    {semaforoVencimiento.texto}
+                  </Badge>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Semáforo Expedientes</label>
+                <div className="mt-1">
+                  <Badge 
+                    variant={semaforoExpedientes.color === 'rojo' ? "destructive" : 
+                            semaforoExpedientes.color === 'amarillo' ? "secondary" : "default"}
+                  >
+                    {semaforoExpedientes.texto}
+                  </Badge>
+                </div>
+              </div>
             </div>
 
             <FormField
