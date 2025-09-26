@@ -1,6 +1,12 @@
+import { useState } from "react";
 import { ProcessTable } from "@/components/common/ProcessTable";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
+import { TrendingUp, AlertCircle, CheckCircle, Plus } from "lucide-react";
+import { Fiscalizacion } from "@/types/processes";
+import { FiscalizacionForm } from "@/components/forms/FiscalizacionForm";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { toast } from "@/components/ui/use-toast";
 
 // Mock data para fiscalización
 const mockFiscalizacion = [
@@ -24,8 +30,9 @@ const mockFiscalizacion = [
     impuesto: 'Impuesto Vehicular',
     estadoProceso: 'En revisión',
     resolucionSadeSalida: 'SADE-FISC-001',
-    fechaResolucion: '2024-02-12',
-    fechaEjecutoria: '2024-02-20'
+    fechaResolucionSade: '2024-02-12',
+    fechaEjecutoria: '2024-02-20',
+    semaforoVencimiento: 'verde' as const
   },
   {
     id: '2',
@@ -47,12 +54,16 @@ const mockFiscalizacion = [
     impuesto: 'Impuesto Predial',
     estadoProceso: 'Vencido',
     resolucionSadeSalida: 'SADE-FISC-002',
-    fechaResolucion: '2024-02-08',
-    fechaEjecutoria: '2024-02-15'
+    fechaResolucionSade: '2024-02-08',
+    fechaEjecutoria: '2024-02-15',
+    semaforoVencimiento: 'rojo' as const
   }
 ];
 
 export default function FiscalizacionPage() {
+  const [data, setData] = useState<Fiscalizacion[]>(mockFiscalizacion);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<Fiscalizacion | null>(null);
   const columns = [
     { key: 'expediente', label: 'Expediente' },
     { key: 'contribuyente', label: 'Contribuyente' },
@@ -66,6 +77,23 @@ export default function FiscalizacionPage() {
       render: (item: any) => new Date(item.fechaPlanillaIngreso).toLocaleDateString()
     }
   ];
+
+  const handleSubmit = (formData: Fiscalizacion) => {
+    if (editingItem) {
+      setData(prev => prev.map(item => item.id === editingItem.id ? formData : item));
+      toast({ title: "Proceso de fiscalización actualizado exitosamente" });
+    } else {
+      setData(prev => [...prev, formData]);
+      toast({ title: "Proceso de fiscalización creado exitosamente" });
+    }
+    setIsDialogOpen(false);
+    setEditingItem(null);
+  };
+
+  const handleEdit = (item: Fiscalizacion) => {
+    setEditingItem(item);
+    setIsDialogOpen(true);
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -132,11 +160,35 @@ export default function FiscalizacionPage() {
         </Card>
       </div>
 
+      <div className="flex justify-end mb-6">
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => setEditingItem(null)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Agregar Nuevo
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingItem ? 'Editar Fiscalización' : 'Nueva Fiscalización'}
+              </DialogTitle>
+            </DialogHeader>
+            <FiscalizacionForm
+              onSubmit={handleSubmit}
+              initialData={editingItem || undefined}
+              mode={editingItem ? 'edit' : 'create'}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
+
       <ProcessTable
         title="Procesos de Fiscalización"
         description="Seguimiento y control de procesos de fiscalización tributaria"
-        data={mockFiscalizacion}
+        data={data}
         columns={columns}
+        onEdit={handleEdit}
       />
     </div>
   );

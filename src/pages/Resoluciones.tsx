@@ -1,6 +1,12 @@
+import { useState } from "react";
 import { ProcessTable } from "@/components/common/ProcessTable";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Scale, FileCheck, Clock } from "lucide-react";
+import { FileText, CheckCircle, Clock, Plus, Scale, FileCheck } from "lucide-react";
+import { Resoluciones } from "@/types/processes";
+import { ResolucionesForm } from "@/components/forms/ResolucionesForm";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { toast } from "@/components/ui/use-toast";
 
 // Mock data para resoluciones
 const mockResoluciones = [
@@ -16,7 +22,7 @@ const mockResoluciones = [
     estado: 'resuelto' as const,
     fechaIngreso: '2024-01-10',
     sadeIngreso: 'SADE-RES-001',
-    numeroActo: 'RES-001',
+    numeroActoSadeSalida: 'RES-001',
     planilla: 'PL-RES-001',
     fechaPlanilla: '2024-01-11',
     actoAdministrativo: 'Resolución Administrativa',
@@ -35,7 +41,7 @@ const mockResoluciones = [
     estado: 'en_proceso' as const,
     fechaIngreso: '2024-01-25',
     sadeIngreso: 'SADE-RES-002',
-    numeroActo: 'RES-002',
+    numeroActoSadeSalida: 'RES-002',
     planilla: 'PL-RES-002',
     fechaPlanilla: '2024-01-26',
     actoAdministrativo: 'Resolución de Cobro',
@@ -45,9 +51,12 @@ const mockResoluciones = [
 ];
 
 export default function ResolucionesPage() {
+  const [data, setData] = useState<Resoluciones[]>(mockResoluciones);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<Resoluciones | null>(null);
   const columns = [
     { key: 'sadeIngreso', label: 'SADE Ingreso' },
-    { key: 'numeroActo', label: 'No. Resolución' },
+    { key: 'numeroActoSadeSalida', label: 'No. Resolución' },
     { key: 'expediente', label: 'Expediente' },
     { key: 'funcionarioEncargado', label: 'Funcionario' },
     { key: 'actoAdministrativo', label: 'Tipo Resolución' },
@@ -57,6 +66,23 @@ export default function ResolucionesPage() {
       render: (item: any) => new Date(item.fechaPlanilla).toLocaleDateString()
     }
   ];
+
+  const handleSubmit = (formData: Resoluciones) => {
+    if (editingItem) {
+      setData(prev => prev.map(item => item.id === editingItem.id ? formData : item));
+      toast({ title: "Resolución actualizada exitosamente" });
+    } else {
+      setData(prev => [...prev, formData]);
+      toast({ title: "Resolución creada exitosamente" });
+    }
+    setIsDialogOpen(false);
+    setEditingItem(null);
+  };
+
+  const handleEdit = (item: Resoluciones) => {
+    setEditingItem(item);
+    setIsDialogOpen(true);
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -111,11 +137,35 @@ export default function ResolucionesPage() {
         </Card>
       </div>
 
+      <div className="flex justify-end mb-6">
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => setEditingItem(null)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Agregar Nuevo
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingItem ? 'Editar Resolución' : 'Nueva Resolución'}
+              </DialogTitle>
+            </DialogHeader>
+            <ResolucionesForm
+              onSubmit={handleSubmit}
+              initialData={editingItem || undefined}
+              mode={editingItem ? 'edit' : 'create'}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
+
       <ProcessTable
         title="Resoluciones Administrativas"
         description="Seguimiento de resoluciones, autos y actos administrativos definitivos"
-        data={mockResoluciones}
+        data={data}
         columns={columns}
+        onEdit={handleEdit}
       />
     </div>
   );

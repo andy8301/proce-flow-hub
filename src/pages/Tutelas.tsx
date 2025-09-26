@@ -1,6 +1,12 @@
+import { useState } from "react";
 import { ProcessTable } from "@/components/common/ProcessTable";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Clock, Shield } from "lucide-react";
+import { AlertTriangle, Clock, Shield, Plus } from "lucide-react";
+import { Tutelas } from "@/types/processes";
+import { TutelasForm } from "@/components/forms/TutelasForm";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { toast } from "@/components/ui/use-toast";
 
 // Mock data para tutelas
 const mockTutelas = [
@@ -45,6 +51,9 @@ const mockTutelas = [
 ];
 
 export default function TutelasPage() {
+  const [data, setData] = useState<Tutelas[]>(mockTutelas);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<Tutelas | null>(null);
   const columns = [
     { key: 'asuntoCorreo', label: 'Asunto' },
     { key: 'remitente', label: 'Remitente' },
@@ -61,6 +70,23 @@ export default function TutelasPage() {
     },
     { key: 'observaciones', label: 'Observaciones' }
   ];
+
+  const handleSubmit = (formData: Tutelas) => {
+    if (editingItem) {
+      setData(prev => prev.map(item => item.id === editingItem.id ? formData : item));
+      toast({ title: "Tutela actualizada exitosamente" });
+    } else {
+      setData(prev => [...prev, formData]);
+      toast({ title: "Tutela creada exitosamente" });
+    }
+    setIsDialogOpen(false);
+    setEditingItem(null);
+  };
+
+  const handleEdit = (item: Tutelas) => {
+    setEditingItem(item);
+    setIsDialogOpen(true);
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -143,11 +169,35 @@ export default function TutelasPage() {
         </Card>
       </div>
 
+      <div className="flex justify-end mb-6">
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => setEditingItem(null)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Agregar Nuevo
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingItem ? 'Editar Tutela' : 'Nueva Tutela'}
+              </DialogTitle>
+            </DialogHeader>
+            <TutelasForm
+              onSubmit={handleSubmit}
+              initialData={editingItem || undefined}
+              mode={editingItem ? 'edit' : 'create'}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
+
       <ProcessTable
         title="Acciones de Tutela"
         description="Seguimiento de tutelas y derechos de petición constitucionales"
-        data={mockTutelas}
+        data={data}
         columns={columns}
+        onEdit={handleEdit}
       />
     </div>
   );
