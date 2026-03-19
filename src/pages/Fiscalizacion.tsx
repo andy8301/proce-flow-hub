@@ -1,69 +1,51 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ProcessTable } from "@/components/common/ProcessTable";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, AlertCircle, CheckCircle, Plus } from "lucide-react";
 import { Fiscalizacion } from "@/types/processes";
 import { FiscalizacionForm } from "@/components/forms/FiscalizacionForm";
 import { Button } from "@/components/ui/button";
+import { Plus, RefreshCw } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
+import { readSheet, SHEET_NAMES } from "@/lib/googleSheets";
 
-// Mock data para fiscalización
-const mockFiscalizacion = [
-  {
-    id: '1',
-    canalIngreso: 'Fiscalización',
-    funcionarioEncargado: 'María García',
-    tipoRenta: 'Vehicular',
-    tipoTramite: 'Fiscalización',
-    fechaVencimiento: '2024-12-28',
-    diasPendientes: 18,
-    semaforo: 'verde' as const,
-    estado: 'en_proceso' as const,
-    fechaIngreso: '2024-01-12',
-    planilla: 'PL-FISC-001',
-    expediente: 'EXP-FISC-001',
-    actoAdministrativo: 'Auto de Fiscalización',
-    fechaPlanillaIngreso: '2024-01-13',
-    proceso: 'Fiscalización Vehicular',
-    contribuyente: 'Juan Pérez',
-    impuesto: 'Impuesto Vehicular',
-    estadoProceso: 'En revisión',
-    resolucionSadeSalida: 'SADE-FISC-001',
-    fechaResolucionSade: '2024-02-12',
-    fechaEjecutoria: '2024-02-20',
-    semaforoVencimiento: 'verde' as const
-  },
-  {
-    id: '2',
-    canalIngreso: 'Oficina',
-    funcionarioEncargado: 'Carlos Rodríguez',
-    tipoRenta: 'Predial',
-    tipoTramite: 'Fiscalización',
-    fechaVencimiento: '2024-12-15',
-    diasPendientes: 2,
-    semaforo: 'rojo' as const,
-    estado: 'vencido' as const,
-    fechaIngreso: '2024-01-08',
-    planilla: 'PL-FISC-002',
-    expediente: 'EXP-FISC-002',
-    actoAdministrativo: 'Auto de Fiscalización Predial',
-    fechaPlanillaIngreso: '2024-01-09',
-    proceso: 'Fiscalización Predial',
-    contribuyente: 'Ana López',
-    impuesto: 'Impuesto Predial',
-    estadoProceso: 'Vencido',
-    resolucionSadeSalida: 'SADE-FISC-002',
-    fechaResolucionSade: '2024-02-08',
-    fechaEjecutoria: '2024-02-15',
-    semaforoVencimiento: 'rojo' as const
-  }
-];
+function rowToFiscalizacion(row: Record<string, string>, index: number): Fiscalizacion {
+  const fechaVencimiento = row['FECHA VENCIMIENTO'] || '';
+  const diasPendientes = fechaVencimiento
+    ? Math.ceil((new Date(fechaVencimiento).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : 0;
+
+  return {
+    id: `row-${index + 2}`,
+    canalIngreso: row['CANAL DE INGRESO'] || '',
+    funcionarioEncargado: row['FUNCIONARIO ENCARGADO'] || '',
+    tipoRenta: row['TIPO DE RENTA'] || '',
+    tipoTramite: row['TIPO DE TRAMITE'] || '',
+    fechaVencimiento,
+    diasPendientes,
+    semaforo: diasPendientes < 0 ? 'rojo' : diasPendientes <= 5 ? 'amarillo' : 'verde',
+    estado: diasPendientes < 0 ? 'vencido' : 'pendiente',
+    fechaIngreso: row['FECHA PLANILLA INGRESO'] || '',
+    planilla: row['No. PLANILLA'] || '',
+    expediente: row['No. EXPEDIENTE'] || '',
+    actoAdministrativo: row['ACTO ADMINISTRATIVO'] || '',
+    fechaPlanillaIngreso: row['FECHA PLANILLA INGRESO'] || '',
+    proceso: row['PROCESO'] || '',
+    contribuyente: row['CONTRIBUYENTE'] || '',
+    impuesto: row['IMPUESTO'] || '',
+    estadoProceso: row['TIPO'] || '',
+    resolucionSadeSalida: row['No. ACTO ADMINISTRATIVO Y No. SADE'] || '',
+    fechaResolucionSade: row['FECHA ACTO (DD-MM-AAAA)'] || '',
+    fechaEjecutoria: '',
+    semaforoVencimiento: diasPendientes < 0 ? 'rojo' : diasPendientes <= 5 ? 'amarillo' : 'verde',
+  };
+}
 
 export default function FiscalizacionPage() {
-  const [data, setData] = useState<Fiscalizacion[]>(mockFiscalizacion);
+  const [data, setData] = useState<Fiscalizacion[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Fiscalizacion | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   const columns = [
     { key: 'expediente', label: 'Expediente' },
     { key: 'contribuyente', label: 'Contribuyente' },
@@ -71,20 +53,34 @@ export default function FiscalizacionPage() {
     { key: 'funcionarioEncargado', label: 'Funcionario' },
     { key: 'impuesto', label: 'Impuesto' },
     { key: 'estadoProceso', label: 'Estado Proceso' },
-    { 
-      key: 'fechaPlanillaIngreso', 
-      label: 'Fecha Ingreso',
-      render: (item: any) => new Date(item.fechaPlanillaIngreso).toLocaleDateString()
-    }
+    { key: 'fechaPlanillaIngreso', label: 'Fecha Ingreso' },
   ];
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const result = await readSheet(SHEET_NAMES.FISCALIZACION);
+      const sheetData = result[SHEET_NAMES.FISCALIZACION] || [];
+      const records = sheetData.map((row: Record<string, string>, index: number) => rowToFiscalizacion(row, index));
+      setData(records);
+      console.log(`Loaded ${records.length} records from Fiscalización`);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast.error("Error al cargar los datos de Fiscalización");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   const handleSubmit = (formData: Fiscalizacion) => {
     if (editingItem) {
       setData(prev => prev.map(item => item.id === editingItem.id ? formData : item));
-      toast({ title: "Proceso de fiscalización actualizado exitosamente" });
+      toast.success("Proceso de fiscalización actualizado exitosamente");
     } else {
       setData(prev => [...prev, formData]);
-      toast({ title: "Proceso de fiscalización creado exitosamente" });
+      toast.success("Proceso de fiscalización creado exitosamente");
     }
     setIsDialogOpen(false);
     setEditingItem(null);
@@ -97,99 +93,46 @@ export default function FiscalizacionPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          Fiscalización
-        </h1>
-        <p className="text-muted-foreground text-lg">
-          Seguimiento de procesos de fiscalización tributaria
-        </p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Fiscalización</h1>
+          <p className="text-muted-foreground text-lg">Seguimiento de procesos de fiscalización tributaria</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={fetchData} disabled={isLoading} className="flex items-center gap-2">
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Actualizar
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setEditingItem(null)}>
+                <Plus className="h-4 w-4 mr-2" /> Agregar Nuevo
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{editingItem ? 'Editar Fiscalización' : 'Nueva Fiscalización'}</DialogTitle>
+              </DialogHeader>
+              <FiscalizacionForm onSubmit={handleSubmit} initialData={editingItem || undefined} mode={editingItem ? 'edit' : 'create'} />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <Card className="shadow-corporate">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" />
-              Total Procesos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">156</div>
-            <p className="text-xs text-muted-foreground">En fiscalización</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-corporate">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <CheckCircle className="w-4 h-4" />
-              Finalizados
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">89</div>
-            <p className="text-xs text-muted-foreground">Completados</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-corporate">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" />
-              En Proceso
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-warning">61</div>
-            <p className="text-xs text-muted-foreground">Activos</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-corporate">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Vencidos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">6</div>
-            <p className="text-xs text-muted-foreground">Requieren atención</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="flex justify-end mb-6">
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingItem(null)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Agregar Nuevo
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingItem ? 'Editar Fiscalización' : 'Nueva Fiscalización'}
-              </DialogTitle>
-            </DialogHeader>
-            <FiscalizacionForm
-              onSubmit={handleSubmit}
-              initialData={editingItem || undefined}
-              mode={editingItem ? 'edit' : 'create'}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <ProcessTable
-        title="Procesos de Fiscalización"
-        description="Seguimiento y control de procesos de fiscalización tributaria"
-        data={data}
-        columns={columns}
-        onEdit={handleEdit}
-      />
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <RefreshCw className="h-8 w-8 animate-spin mr-2" />
+          <span>Cargando datos...</span>
+        </div>
+      ) : (
+        <ProcessTable
+          title="Procesos de Fiscalización"
+          description={`Seguimiento y control de procesos de fiscalización tributaria (${data.length} registros)`}
+          data={data}
+          columns={columns}
+          onEdit={handleEdit}
+        />
+      )}
     </div>
   );
 }
