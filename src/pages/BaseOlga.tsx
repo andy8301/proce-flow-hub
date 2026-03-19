@@ -9,44 +9,45 @@ import { toast } from "sonner";
 import { readSheet, appendToSheet, updateSheetRow, SHEET_NAMES } from "@/lib/googleSheets";
 
 // Helper to convert sheet row to BaseOlga object
-function rowToBaseOlga(row: string[], index: number): BaseOlga {
-  const fechaVencimiento = row[28] || new Date().toISOString();
+function rowToBaseOlga(row: Record<string, string>, index: number): BaseOlga {
+  const fechaVencimiento = row['FECHA VENCIMIENTO'] || row['fechaVencimiento'] || new Date().toISOString();
   const diasPendientes = Math.ceil((new Date(fechaVencimiento).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+  const cerrado = row['BASE OLGAB'] || '';
   
   return {
-    id: `row-${index + 2}`, // +2 because row 1 is headers, and we're 0-indexed
-    consecutivo: row[0] || "",
-    canalIngreso: row[1] || "",
-    areaRemitente: row[2] || "",
-    planilla: row[3] || "",
-    expediente: row[4] || "",
-    fechaRadicacion: row[5] || "",
-    actoAdministrativo: row[6] || "",
-    numeroActo: row[7] || "",
-    fechaActo: row[8] || "",
-    placa: row[9] || "",
-    identificacion: row[10] || "",
-    contribuyente: row[11] || "",
-    ciudadDepartamento: row[12] || "",
-    funcionarioEncargado: row[13] || "",
-    fechaRecibido: row[14] || "",
-    tipoRenta: row[15] || "",
-    tipoTramite: row[16] || "",
-    item: row[17] || "",
-    numeroResolucion: row[18] || "",
-    numeroSadeSalida: row[19] || "",
-    fechaResolucion: row[20] || "",
-    tipoRespuesta: row[21] || "",
-    fechaEjecutoria: row[22] || "",
-    traslado: row[23] || "",
-    cerradoPasadoArchivo: row[24] || "",
-    ubicacionFisica: row[25] || "",
-    observacionSade: row[26] || "",
+    id: `row-${index + 2}`,
+    consecutivo: row['No consecutivo'] || '',
+    canalIngreso: row['Canal de ingreso'] || '',
+    areaRemitente: row['Area Remitente'] || '',
+    planilla: row['No PLANILLA '] || row['No. PLANILLA'] || '',
+    expediente: row['No.  EXPEDIENTE'] || '',
+    fechaRadicacion: row['Fecha Radicacion expediente (DD/MM/YYYY)'] || '',
+    actoAdministrativo: row['ACTO ADMINISTRA-TIVO'] || '',
+    numeroActo: row['No. ACTO ADMINISTRATIVO Y No. SADE'] || '',
+    fechaActo: row['FECHA ACTO (DD-MM-AAAA)'] || '',
+    placa: row['PLACA'] || '',
+    identificacion: row['No. DE IDENTIFICACION'] || '',
+    contribuyente: row['CONTRIBUYENTE '] || '',
+    ciudadDepartamento: row['CIUDAD-DEPARTAMENTO'] || '',
+    funcionarioEncargado: row['FUNCIONARIO ENCARGADO'] || '',
+    fechaRecibido: row['FECHA DE RECIBIDO'] || '',
+    tipoRenta: row['TIPO DE RENTA'] || '',
+    tipoTramite: row['TIPO DE TRAMITE'] || '',
+    item: row['ITEM'] || '',
+    numeroResolucion: row['NUMERO DE RESOLUCION'] || '',
+    numeroSadeSalida: row['NUMERO DE SADE SALIDA'] || '',
+    fechaResolucion: row['FECHA RESOLUCION/SADE SALIDA'] || '',
+    tipoRespuesta: row['TIPO DE RESPUESTA'] || '',
+    fechaEjecutoria: row['FECHA EJECUTORIA'] || '',
+    traslado: row['TRASLADO'] || '',
+    cerradoPasadoArchivo: cerrado,
+    ubicacionFisica: row['UBICACION FISICA'] || '',
+    observacionSade: row['OBSERVACIONES'] || '',
     fechaVencimiento: fechaVencimiento,
-    fechaIngreso: row[14] || new Date().toISOString(),
+    fechaIngreso: row['FECHA DE RECIBIDO'] || new Date().toISOString(),
     diasPendientes: diasPendientes,
     semaforo: diasPendientes < 0 ? 'rojo' : diasPendientes <= 5 ? 'amarillo' : 'verde',
-    estado: row[24] === 'Si' ? 'resuelto' : diasPendientes < 0 ? 'vencido' : 'pendiente',
+    estado: cerrado === 'Si' ? 'resuelto' : diasPendientes < 0 ? 'vencido' : 'pendiente',
   };
 }
 
