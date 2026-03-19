@@ -1,83 +1,80 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ProcessTable } from "@/components/common/ProcessTable";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Clock, Shield, Plus } from "lucide-react";
 import { Tutelas } from "@/types/processes";
 import { TutelasForm } from "@/components/forms/TutelasForm";
 import { Button } from "@/components/ui/button";
+import { Plus, RefreshCw } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
+import { readSheet, SHEET_NAMES } from "@/lib/googleSheets";
 
-// Mock data para tutelas
-const mockTutelas = [
-  {
-    id: '1',
-    canalIngreso: 'Juzgado',
-    funcionarioEncargado: 'Ana Torres',
-    tipoRenta: 'Constitucional',
-    tipoTramite: 'Tutela',
-    fechaVencimiento: '2024-12-18',
-    diasPendientes: 10,
-    semaforo: 'amarillo' as const,
-    estado: 'en_proceso' as const,
-    fechaIngreso: '2024-01-08',
-    mes: 'Enero',
-    fechaAsignacion: '2024-01-09',
-    asuntoCorreo: 'Tutela - Derecho de Petición No. T-001',
-    remitente: 'Juzgado Tercero Civil',
-    fechaRespuestaPeticion: '2024-01-15',
-    fechaRespuestaJuridica: '2024-01-20',
-    observaciones: 'En espera de concepto jurídico'
-  },
-  {
-    id: '2',
-    canalIngreso: 'Defensoría',
-    funcionarioEncargado: 'Laura Martínez',
-    tipoRenta: 'Constitucional',
-    tipoTramite: 'Tutela',
-    fechaVencimiento: '2024-12-12',
-    diasPendientes: 2,
-    semaforo: 'rojo' as const,
-    estado: 'vencido' as const,
-    fechaIngreso: '2024-01-05',
-    mes: 'Enero',
-    fechaAsignacion: '2024-01-06',
-    asuntoCorreo: 'Tutela - Acceso a Información No. T-002',
-    remitente: 'Defensoría del Pueblo',
-    fechaRespuestaPeticion: '2024-01-12',
-    fechaRespuestaJuridica: '2024-01-18',
-    observaciones: 'Requiere respuesta urgente'
-  }
-];
+function rowToTutela(row: Record<string, string>, index: number): Tutelas {
+  const fechaVencimiento = row['FECHA DE VENCIMIENTO'] || '';
+  const diasPendientes = parseInt(row['DIAS PENDIENTES'] || '0') || 0;
+
+  return {
+    id: `row-${index + 2}`,
+    canalIngreso: row['CANAL DE INGRESO'] || '',
+    funcionarioEncargado: row['FUNCIONARIO ENCARGADO'] || '',
+    tipoRenta: row['TIPO DE RENTA'] || '',
+    tipoTramite: row['TIPO DE TRAMITE'] || '',
+    fechaVencimiento,
+    diasPendientes,
+    semaforo: row['SEMAFORO'] === 'VENCIDO' ? 'rojo' : diasPendientes <= 2 ? 'amarillo' : 'verde',
+    estado: row['SEMAFORO'] === 'VENCIDO' ? 'vencido' : 'pendiente',
+    fechaIngreso: row['FECHA ASIGNACION'] || '',
+    mes: row['MES'] || '',
+    fechaAsignacion: row['FECHA ASIGNACION'] || '',
+    asuntoCorreo: row['ASUNTO CORREO'] || '',
+    remitente: row['REMITENTE'] || '',
+    fechaRespuestaPeticion: row['FECHA RESPUESTA DERECHO DE PETICIÓN DD-MM-AAAA'] || '',
+    fechaRespuestaJuridica: row['FECHA RESPUESTA AL AREA DE JURIDICA\nDD-MM-AAAA'] || '',
+    observaciones: row['OBSERVACIONES'] || '',
+  };
+}
 
 export default function TutelasPage() {
-  const [data, setData] = useState<Tutelas[]>(mockTutelas);
+  const [data, setData] = useState<Tutelas[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Tutelas | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   const columns = [
     { key: 'asuntoCorreo', label: 'Asunto' },
     { key: 'remitente', label: 'Remitente' },
     { key: 'funcionarioEncargado', label: 'Funcionario' },
-    { 
-      key: 'fechaAsignacion', 
-      label: 'Fecha Asignación',
-      render: (item: any) => new Date(item.fechaAsignacion).toLocaleDateString()
+    { key: 'fechaAsignacion', label: 'Fecha Asignación' },
+    { key: 'fechaRespuestaPeticion', label: 'Respuesta Petición',
+      render: (item: Tutelas) => item.fechaRespuestaPeticion || 'Pendiente'
     },
-    { 
-      key: 'fechaRespuestaPeticion', 
-      label: 'Respuesta Petición',
-      render: (item: any) => item.fechaRespuestaPeticion ? new Date(item.fechaRespuestaPeticion).toLocaleDateString() : 'Pendiente'
-    },
-    { key: 'observaciones', label: 'Observaciones' }
+    { key: 'observaciones', label: 'Observaciones' },
   ];
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const result = await readSheet(SHEET_NAMES.TUTELAS);
+      const sheetData = result[SHEET_NAMES.TUTELAS] || [];
+      const records = sheetData.map((row: Record<string, string>, index: number) => rowToTutela(row, index));
+      setData(records);
+      console.log(`Loaded ${records.length} records from Tutelas`);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast.error("Error al cargar los datos de Tutelas");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   const handleSubmit = (formData: Tutelas) => {
     if (editingItem) {
       setData(prev => prev.map(item => item.id === editingItem.id ? formData : item));
-      toast({ title: "Tutela actualizada exitosamente" });
+      toast.success("Tutela actualizada exitosamente");
     } else {
       setData(prev => [...prev, formData]);
-      toast({ title: "Tutela creada exitosamente" });
+      toast.success("Tutela creada exitosamente");
     }
     setIsDialogOpen(false);
     setEditingItem(null);
@@ -90,115 +87,46 @@ export default function TutelasPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          Tutelas
-        </h1>
-        <p className="text-muted-foreground text-lg">
-          Gestión de acciones de tutela y derechos fundamentales
-        </p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Tutelas</h1>
+          <p className="text-muted-foreground text-lg">Gestión de acciones de tutela y derechos fundamentales</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={fetchData} disabled={isLoading} className="flex items-center gap-2">
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Actualizar
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setEditingItem(null)}>
+                <Plus className="h-4 w-4 mr-2" /> Agregar Nuevo
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{editingItem ? 'Editar Tutela' : 'Nueva Tutela'}</DialogTitle>
+              </DialogHeader>
+              <TutelasForm onSubmit={handleSubmit} initialData={editingItem || undefined} mode={editingItem ? 'edit' : 'create'} />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      {/* Alerta de tiempo crítico */}
-      <Card className="border-destructive/50 bg-destructive/5 shadow-corporate">
-        <CardHeader>
-          <CardTitle className="text-destructive flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5" />
-            Atención Prioritaria
-          </CardTitle>
-          <CardDescription>
-            Las tutelas tienen términos perentorios que deben cumplirse estrictamente
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-destructive">48 horas</div>
-              <p className="text-sm text-muted-foreground">Término legal para respuesta</p>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-warning">2</div>
-              <p className="text-sm text-muted-foreground">Tutelas activas</p>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-destructive">1</div>
-              <p className="text-sm text-muted-foreground">Próxima a vencer</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <Card className="shadow-corporate">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Shield className="w-4 h-4" />
-              Total Tutelas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">28</div>
-            <p className="text-xs text-muted-foreground">Este año</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-corporate">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              En Término
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">25</div>
-            <p className="text-xs text-muted-foreground">Respondidas a tiempo</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-corporate">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Cumplimiento
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">89.3%</div>
-            <p className="text-xs text-muted-foreground">Eficacia en respuesta</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="flex justify-end mb-6">
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingItem(null)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Agregar Nuevo
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingItem ? 'Editar Tutela' : 'Nueva Tutela'}
-              </DialogTitle>
-            </DialogHeader>
-            <TutelasForm
-              onSubmit={handleSubmit}
-              initialData={editingItem || undefined}
-              mode={editingItem ? 'edit' : 'create'}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <ProcessTable
-        title="Acciones de Tutela"
-        description="Seguimiento de tutelas y derechos de petición constitucionales"
-        data={data}
-        columns={columns}
-        onEdit={handleEdit}
-      />
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <RefreshCw className="h-8 w-8 animate-spin mr-2" />
+          <span>Cargando datos...</span>
+        </div>
+      ) : (
+        <ProcessTable
+          title="Acciones de Tutela"
+          description={`Seguimiento de tutelas y derechos de petición constitucionales (${data.length} registros)`}
+          data={data}
+          columns={columns}
+          onEdit={handleEdit}
+        />
+      )}
     </div>
   );
 }
