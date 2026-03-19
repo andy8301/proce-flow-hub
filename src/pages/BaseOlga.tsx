@@ -119,8 +119,8 @@ export default function BaseOlgaPage() {
       const result = await readSheet(SHEET_NAMES.BASE_OLGA);
       const sheetData = result[SHEET_NAMES.BASE_OLGA] || [];
       
-      // Skip header row and convert to BaseOlga objects
-      const records = sheetData.slice(1).map((row: string[], index: number) => rowToBaseOlga(row, index));
+      // Data already comes as objects (headers stripped by edge function)
+      const records = sheetData.map((row: Record<string, string>, index: number) => rowToBaseOlga(row, index));
       setData(records);
       console.log(`Loaded ${records.length} records from Base Olga`);
     } catch (error) {
