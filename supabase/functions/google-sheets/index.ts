@@ -107,7 +107,7 @@ serve(async (req) => {
       const results: Record<string, any[]> = {};
 
       for (const sheet of sheets) {
-        const sheetRange = range || `'${sheet}'!A:Z`;
+        const sheetRange = range || `'${sheet}'!A:BZ`;
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(sheetRange)}`;
 
         const response = await fetch(url, { headers: authHeaders });
