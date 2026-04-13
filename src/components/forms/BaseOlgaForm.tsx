@@ -148,6 +148,21 @@ export function BaseOlgaForm({ onSubmit, initialData, mode = 'create' }: BaseOlg
       diasPendientes: Math.ceil((new Date(data.fechaVencimiento).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)),
       semaforo: 'verde' as const,
       estado: 'pendiente' as const,
+      anoIngreso: '',
+      mes: '',
+      fechaPlanilla: '',
+      diasTranscurridos: '',
+      clasificacionPdtes: '',
+      tipoRentaOtro: '',
+      tipoResolucion: '',
+      trasladoArchivoFuncionario: '',
+      semaforoExpedientes: '',
+      baseFuncionario1ra: '',
+      baseFuncionario2da: '',
+      baseFuncionario3ra: '',
+      nota: '',
+      sadeRepetido: '',
+      tipoRespuestaFinal: '',
     };
     onSubmit(processData);
   };

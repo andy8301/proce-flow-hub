@@ -35,6 +35,21 @@ export interface BaseOlga extends BaseProcess {
   cerradoPasadoArchivo: string;
   ubicacionFisica: string;
   observacionSade: string;
+  anoIngreso: string;
+  mes: string;
+  fechaPlanilla: string;
+  diasTranscurridos: string;
+  clasificacionPdtes: string;
+  tipoRentaOtro: string;
+  tipoResolucion: string;
+  trasladoArchivoFuncionario: string;
+  semaforoExpedientes: string;
+  baseFuncionario1ra: string;
+  baseFuncionario2da: string;
+  baseFuncionario3ra: string;
+  nota: string;
+  sadeRepetido: string;
+  tipoRespuestaFinal: string;
 }
 
 export interface BaseCorreos extends BaseProcess {

@@ -35,7 +35,8 @@ export const mockBaseOlga: BaseOlga[] = [
     semaforo: 'amarillo' as const,
     observacionSade: 'En proceso de revisión',
     estado: 'en_proceso' as const,
-    fechaIngreso: '2024-01-15'
+    fechaIngreso: '2024-01-15',
+    anoIngreso: '2024', mes: '1', fechaPlanilla: '', diasTranscurridos: '', clasificacionPdtes: '', tipoRentaOtro: '', tipoResolucion: '', trasladoArchivoFuncionario: '', semaforoExpedientes: '', baseFuncionario1ra: '', baseFuncionario2da: '', baseFuncionario3ra: '', nota: '', sadeRepetido: '', tipoRespuestaFinal: ''
   },
   {
     id: '2',
@@ -70,7 +71,8 @@ export const mockBaseOlga: BaseOlga[] = [
     semaforo: 'rojo' as const,
     observacionSade: 'Requiere documentación adicional',
     estado: 'vencido' as const,
-    fechaIngreso: '2024-01-10'
+    fechaIngreso: '2024-01-10',
+    anoIngreso: '2024', mes: '1', fechaPlanilla: '', diasTranscurridos: '', clasificacionPdtes: '', tipoRentaOtro: '', tipoResolucion: '', trasladoArchivoFuncionario: '', semaforoExpedientes: '', baseFuncionario1ra: '', baseFuncionario2da: '', baseFuncionario3ra: '', nota: '', sadeRepetido: '', tipoRespuestaFinal: ''
   }
 ];
 
