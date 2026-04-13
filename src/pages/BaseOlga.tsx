@@ -8,12 +8,10 @@ import { Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { readSheet, appendToSheet, updateSheetRow, SHEET_NAMES } from "@/lib/googleSheets";
 
-// Helper to convert sheet row to BaseOlga object using actual Google Sheet headers
 function rowToBaseOlga(row: Record<string, string>, index: number): BaseOlga {
   const fechaVencimiento = row['FECHA DE VENCIMIENTO'] || '';
   let diasPendientes = 0;
   if (fechaVencimiento && fechaVencimiento !== '#N/A') {
-    // Parse DD/MM/YYYY format
     const parts = fechaVencimiento.split('/');
     if (parts.length === 3) {
       const dateObj = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
@@ -22,7 +20,7 @@ function rowToBaseOlga(row: Record<string, string>, index: number): BaseOlga {
   }
   const cerrado = row['CERRADO PASADO A ARCHIVO'] || row['BASE OLGAB'] || '';
   const semaforoSheet = row['SEMAFORO DE VENCIMIENTO'] || '';
-  
+
   return {
     id: `row-${index + 2}`,
     consecutivo: row['No consecutivo'] || '',
@@ -46,7 +44,8 @@ function rowToBaseOlga(row: Record<string, string>, index: number): BaseOlga {
     numeroResolucion: row['NUMERO DE RESOLUCION'] || row['RESOLUCION'] || '',
     numeroSadeSalida: row['NUMERO DE SADE SALIDA'] || row['SADE SALIDA'] || row['NUMERO DE SADE'] || '',
     fechaResolucion: row['FECHA RESOLUCION/SADE SALIDA'] || row['FECHA RESOLUCION/SADE'] || row['FECHA RESOLUCIÓN/SADE'] || row['FECHA RESOLUCION'] || '',
-    tipoRespuesta: row['TIPO DE RESPUESTA'] || row['TIPO DE RESPUESTA FINAL'] || '',
+    tipoRespuesta: row['TIPO DE RESPUESTA'] || '',
+    tipoRespuestaFinal: row['TIPO DE RESPUESTA FINAL'] || '',
     fechaEjecutoria: row['FECHA EJECUTORIA'] || '',
     traslado: row['TRASLADO'] || '',
     cerradoPasadoArchivo: cerrado,
@@ -54,13 +53,27 @@ function rowToBaseOlga(row: Record<string, string>, index: number): BaseOlga {
     observacionSade: row['OBSERVACIONES'] || row['OBSERVACION'] || '',
     fechaVencimiento: fechaVencimiento,
     fechaIngreso: row['FECHA DE RECIBIDO'] || '',
+    // New fields
+    anoIngreso: row['AÑO INGRESO'] || '',
+    mes: row['MES'] || '',
+    fechaPlanilla: row['FECHA DE PLANILLA '] || row['FECHA PLANILLA '] || row['FECHA PLANILLA'] || '',
+    diasTranscurridos: row['DIAS TRANSCURRIDOS ENTRE FECHA EXP Y FECHA NOTIF'] || '',
+    clasificacionPdtes: row['CLASIFICACION PDTES'] || '',
+    tipoRentaOtro: row['SI EL TIPO DE RENTA ES OTRO (ESPECIFICAR EN ESTA COLUMNA)'] || '',
+    tipoResolucion: row['TIPO DE RESOLUCION'] || '',
+    trasladoArchivoFuncionario: row['TRASLADO DE ARCHIVO A FUNCIONARIO ENCARGADO'] || '',
+    semaforoExpedientes: row['SEMAFORO EXPEDIENTES'] || '',
+    baseFuncionario1ra: row['BASE FUNCIONARIO 1RA RESPUESTA'] || '',
+    baseFuncionario2da: row['BASE FUNCIONARIO 2DA RESPUESTA'] || '',
+    baseFuncionario3ra: row['BASE FUNCIONARIO 3RA RESPUESTA'] || '',
+    nota: row['NOTA:'] || '',
+    sadeRepetido: row['SADE REPETIDO'] || '',
     diasPendientes: diasPendientes,
     semaforo: semaforoSheet === 'CONTESTADO' ? 'verde' : diasPendientes < 0 ? 'rojo' : diasPendientes <= 5 ? 'amarillo' : 'verde',
     estado: semaforoSheet === 'CONTESTADO' || cerrado === 'Si' ? 'resuelto' : diasPendientes < 0 ? 'vencido' : 'pendiente',
   };
 }
 
-// Helper to convert BaseOlga object to sheet row
 function baseOlgaToRow(data: BaseOlga): string[] {
   return [
     data.consecutivo,
@@ -104,9 +117,12 @@ export default function BaseOlgaPage() {
 
   const columns = [
     { key: 'consecutivo', label: 'No. Consecutivo' },
+    { key: 'anoIngreso', label: 'Año Ingreso' },
+    { key: 'mes', label: 'Mes' },
     { key: 'canalIngreso', label: 'Canal Ingreso' },
     { key: 'areaRemitente', label: 'Área Remitente' },
     { key: 'planilla', label: 'No. Planilla' },
+    { key: 'fechaPlanilla', label: 'Fecha Planilla' },
     { key: 'expediente', label: 'No. Expediente' },
     { key: 'fechaRadicacion', label: 'Fecha Radicación' },
     { key: 'actoAdministrativo', label: 'Acto Administrativo' },
@@ -116,24 +132,36 @@ export default function BaseOlgaPage() {
     { key: 'identificacion', label: 'No. Identificación' },
     { key: 'contribuyente', label: 'Contribuyente' },
     { key: 'ciudadDepartamento', label: 'Ciudad-Depto' },
-    { key: 'funcionarioEncargado', label: 'Funcionario' },
+    { key: 'funcionarioEncargado', label: 'Funcionario Encargado' },
     { key: 'fechaRecibido', label: 'Fecha Recibido' },
     { key: 'tipoRenta', label: 'Tipo Renta' },
+    { key: 'tipoRentaOtro', label: 'Tipo Renta (Otro)' },
     { key: 'tipoTramite', label: 'Tipo Trámite' },
     { key: 'item', label: 'Ítem' },
+    { key: 'clasificacionPdtes', label: 'Clasificación Pdtes' },
     { key: 'numeroResolucion', label: 'No. Resolución' },
+    { key: 'tipoResolucion', label: 'Tipo Resolución' },
     { key: 'numeroSadeSalida', label: 'No. SADE Salida' },
     { key: 'fechaResolucion', label: 'Fecha Resolución/SADE' },
     { key: 'tipoRespuesta', label: 'Tipo Respuesta' },
+    { key: 'tipoRespuestaFinal', label: 'Tipo Respuesta Final' },
     { key: 'fechaEjecutoria', label: 'Fecha Ejecutoria' },
+    { key: 'diasTranscurridos', label: 'Días Transcurridos Exp-Notif' },
     { key: 'traslado', label: 'Traslado' },
+    { key: 'trasladoArchivoFuncionario', label: 'Traslado Archivo a Funcionario' },
     { key: 'cerradoPasadoArchivo', label: 'Cerrado/Archivo' },
     { key: 'ubicacionFisica', label: 'Ubicación Física' },
     { key: 'observacionSade', label: 'Observaciones' },
+    { key: 'nota', label: 'Nota' },
     { key: 'fechaVencimiento', label: 'Fecha Vencimiento' },
-    { 
-      key: 'semaforo', 
-      label: 'Semáforo',
+    { key: 'semaforoExpedientes', label: 'Semáforo Expedientes' },
+    { key: 'baseFuncionario1ra', label: 'Funcionario 1ra Respuesta' },
+    { key: 'baseFuncionario2da', label: 'Funcionario 2da Respuesta' },
+    { key: 'baseFuncionario3ra', label: 'Funcionario 3ra Respuesta' },
+    { key: 'sadeRepetido', label: 'SADE Repetido' },
+    {
+      key: 'semaforo',
+      label: 'Semáforo Vencimiento',
       render: (item: BaseOlga) => {
         const colors = { verde: '🟢', amarillo: '🟡', rojo: '🔴' };
         return colors[item.semaforo] || item.semaforo;
@@ -142,13 +170,11 @@ export default function BaseOlgaPage() {
     { key: 'estado', label: 'Estado' },
   ];
 
-  // Fetch data from Google Sheets
   const fetchData = async () => {
     setIsLoading(true);
     try {
       const result = await readSheet(SHEET_NAMES.BASE_OLGA);
       const sheetData = result[SHEET_NAMES.BASE_OLGA] || [];
-      
       const records = sheetData.map((row: Record<string, string>, index: number) => rowToBaseOlga(row, index));
       setData(records);
       console.log(`Loaded ${records.length} records from Base Olga`);
@@ -168,7 +194,6 @@ export default function BaseOlgaPage() {
     setIsSaving(true);
     try {
       const rowData = baseOlgaToRow(formData);
-      
       if (editingItem) {
         const rowNumber = parseInt(editingItem.id.replace('row-', ''));
         const range = `A${rowNumber}:AC${rowNumber}`;
@@ -178,7 +203,6 @@ export default function BaseOlgaPage() {
         await appendToSheet(SHEET_NAMES.BASE_OLGA, rowData);
         toast.success("Registro creado exitosamente en Google Sheets");
       }
-      
       await fetchData();
       setIsDialogOpen(false);
       setEditingItem(undefined);
@@ -204,25 +228,14 @@ export default function BaseOlgaPage() {
     <div className="p-6 max-w-[95vw] mx-auto space-y-6">
       <div className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Base Olga
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Gestión de expedientes y actos administrativos
-          </p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Base Olga</h1>
+          <p className="text-muted-foreground text-lg">Gestión de expedientes y actos administrativos</p>
         </div>
-        
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={fetchData} 
-            disabled={isLoading}
-            className="flex items-center gap-2"
-          >
+          <Button variant="outline" onClick={fetchData} disabled={isLoading} className="flex items-center gap-2">
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Actualizar
           </Button>
-          
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={handleAddNew} className="flex items-center gap-2">
@@ -232,15 +245,9 @@ export default function BaseOlgaPage() {
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>
-                  {editingItem ? 'Editar Registro' : 'Nuevo Registro'} - Base Olga
-                </DialogTitle>
+                <DialogTitle>{editingItem ? 'Editar Registro' : 'Nuevo Registro'} - Base Olga</DialogTitle>
               </DialogHeader>
-              <BaseOlgaForm
-                onSubmit={handleSubmit}
-                initialData={editingItem}
-                mode={editingItem ? 'edit' : 'create'}
-              />
+              <BaseOlgaForm onSubmit={handleSubmit} initialData={editingItem} mode={editingItem ? 'edit' : 'create'} />
               {isSaving && (
                 <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
                   <div className="text-center">
