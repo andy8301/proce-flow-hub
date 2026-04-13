@@ -8,19 +8,28 @@ import { Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { readSheet, appendToSheet, updateSheetRow, SHEET_NAMES } from "@/lib/googleSheets";
 
-// Helper to convert sheet row to BaseOlga object
+// Helper to convert sheet row to BaseOlga object using actual Google Sheet headers
 function rowToBaseOlga(row: Record<string, string>, index: number): BaseOlga {
-  const fechaVencimiento = row['FECHA VENCIMIENTO'] || row['fechaVencimiento'] || new Date().toISOString();
-  const diasPendientes = Math.ceil((new Date(fechaVencimiento).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-  const cerrado = row['BASE OLGAB'] || '';
+  const fechaVencimiento = row['FECHA DE VENCIMIENTO'] || '';
+  let diasPendientes = 0;
+  if (fechaVencimiento && fechaVencimiento !== '#N/A') {
+    // Parse DD/MM/YYYY format
+    const parts = fechaVencimiento.split('/');
+    if (parts.length === 3) {
+      const dateObj = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+      diasPendientes = Math.ceil((dateObj.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    }
+  }
+  const cerrado = row['CERRADO PASADO A ARCHIVO'] || row['BASE OLGAB'] || '';
+  const semaforoSheet = row['SEMAFORO DE VENCIMIENTO'] || '';
   
   return {
     id: `row-${index + 2}`,
     consecutivo: row['No consecutivo'] || '',
     canalIngreso: row['Canal de ingreso'] || '',
     areaRemitente: row['Area Remitente'] || '',
-    planilla: row['No PLANILLA '] || row['No. PLANILLA'] || '',
-    expediente: row['No.  EXPEDIENTE'] || '',
+    planilla: row['No PLANILLA '] || row['No. PLANILLA'] || row['NO DE PLANILLA'] || '',
+    expediente: row['No.  EXPEDIENTE'] || row['EXPEDIENTE'] || '',
     fechaRadicacion: row['Fecha Radicacion expediente (DD/MM/YYYY)'] || '',
     actoAdministrativo: row['ACTO ADMINISTRA-TIVO'] || '',
     numeroActo: row['No. ACTO ADMINISTRATIVO Y No. SADE'] || '',
@@ -34,20 +43,20 @@ function rowToBaseOlga(row: Record<string, string>, index: number): BaseOlga {
     tipoRenta: row['TIPO DE RENTA'] || '',
     tipoTramite: row['TIPO DE TRAMITE'] || '',
     item: row['ITEM'] || '',
-    numeroResolucion: row['NUMERO DE RESOLUCION'] || '',
-    numeroSadeSalida: row['NUMERO DE SADE SALIDA'] || '',
-    fechaResolucion: row['FECHA RESOLUCION/SADE SALIDA'] || '',
-    tipoRespuesta: row['TIPO DE RESPUESTA'] || '',
+    numeroResolucion: row['NUMERO DE RESOLUCION'] || row['RESOLUCION'] || '',
+    numeroSadeSalida: row['NUMERO DE SADE SALIDA'] || row['SADE SALIDA'] || row['NUMERO DE SADE'] || '',
+    fechaResolucion: row['FECHA RESOLUCION/SADE SALIDA'] || row['FECHA RESOLUCION/SADE'] || row['FECHA RESOLUCIÓN/SADE'] || row['FECHA RESOLUCION'] || '',
+    tipoRespuesta: row['TIPO DE RESPUESTA'] || row['TIPO DE RESPUESTA FINAL'] || '',
     fechaEjecutoria: row['FECHA EJECUTORIA'] || '',
     traslado: row['TRASLADO'] || '',
     cerradoPasadoArchivo: cerrado,
-    ubicacionFisica: row['UBICACION FISICA'] || '',
-    observacionSade: row['OBSERVACIONES'] || '',
+    ubicacionFisica: row['UBICACIÓN DEL EXPEDIENTE EN FISICO'] || '',
+    observacionSade: row['OBSERVACIONES'] || row['OBSERVACION'] || '',
     fechaVencimiento: fechaVencimiento,
-    fechaIngreso: row['FECHA DE RECIBIDO'] || new Date().toISOString(),
+    fechaIngreso: row['FECHA DE RECIBIDO'] || '',
     diasPendientes: diasPendientes,
-    semaforo: diasPendientes < 0 ? 'rojo' : diasPendientes <= 5 ? 'amarillo' : 'verde',
-    estado: cerrado === 'Si' ? 'resuelto' : diasPendientes < 0 ? 'vencido' : 'pendiente',
+    semaforo: semaforoSheet === 'CONTESTADO' ? 'verde' : diasPendientes < 0 ? 'rojo' : diasPendientes <= 5 ? 'amarillo' : 'verde',
+    estado: semaforoSheet === 'CONTESTADO' || cerrado === 'Si' ? 'resuelto' : diasPendientes < 0 ? 'vencido' : 'pendiente',
   };
 }
 
@@ -94,22 +103,43 @@ export default function BaseOlgaPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   const columns = [
-    { key: 'consecutivo', label: 'Consecutivo' },
-    { key: 'expediente', label: 'Expediente' },
+    { key: 'consecutivo', label: 'No. Consecutivo' },
+    { key: 'canalIngreso', label: 'Canal Ingreso' },
+    { key: 'areaRemitente', label: 'Área Remitente' },
+    { key: 'planilla', label: 'No. Planilla' },
+    { key: 'expediente', label: 'No. Expediente' },
+    { key: 'fechaRadicacion', label: 'Fecha Radicación' },
+    { key: 'actoAdministrativo', label: 'Acto Administrativo' },
+    { key: 'numeroActo', label: 'No. Acto/SADE' },
+    { key: 'fechaActo', label: 'Fecha Acto' },
+    { key: 'placa', label: 'Placa' },
+    { key: 'identificacion', label: 'No. Identificación' },
     { key: 'contribuyente', label: 'Contribuyente' },
+    { key: 'ciudadDepartamento', label: 'Ciudad-Depto' },
     { key: 'funcionarioEncargado', label: 'Funcionario' },
+    { key: 'fechaRecibido', label: 'Fecha Recibido' },
+    { key: 'tipoRenta', label: 'Tipo Renta' },
     { key: 'tipoTramite', label: 'Tipo Trámite' },
+    { key: 'item', label: 'Ítem' },
+    { key: 'numeroResolucion', label: 'No. Resolución' },
+    { key: 'numeroSadeSalida', label: 'No. SADE Salida' },
+    { key: 'fechaResolucion', label: 'Fecha Resolución/SADE' },
+    { key: 'tipoRespuesta', label: 'Tipo Respuesta' },
+    { key: 'fechaEjecutoria', label: 'Fecha Ejecutoria' },
+    { key: 'traslado', label: 'Traslado' },
+    { key: 'cerradoPasadoArchivo', label: 'Cerrado/Archivo' },
+    { key: 'ubicacionFisica', label: 'Ubicación Física' },
+    { key: 'observacionSade', label: 'Observaciones' },
+    { key: 'fechaVencimiento', label: 'Fecha Vencimiento' },
     { 
-      key: 'fechaVencimiento', 
-      label: 'Fecha Vencimiento',
+      key: 'semaforo', 
+      label: 'Semáforo',
       render: (item: BaseOlga) => {
-        try {
-          return new Date(item.fechaVencimiento).toLocaleDateString();
-        } catch {
-          return item.fechaVencimiento || '-';
-        }
+        const colors = { verde: '🟢', amarillo: '🟡', rojo: '🔴' };
+        return colors[item.semaforo] || item.semaforo;
       }
-    }
+    },
+    { key: 'estado', label: 'Estado' },
   ];
 
   // Fetch data from Google Sheets
@@ -119,7 +149,6 @@ export default function BaseOlgaPage() {
       const result = await readSheet(SHEET_NAMES.BASE_OLGA);
       const sheetData = result[SHEET_NAMES.BASE_OLGA] || [];
       
-      // Data already comes as objects (headers stripped by edge function)
       const records = sheetData.map((row: Record<string, string>, index: number) => rowToBaseOlga(row, index));
       setData(records);
       console.log(`Loaded ${records.length} records from Base Olga`);
@@ -141,18 +170,15 @@ export default function BaseOlgaPage() {
       const rowData = baseOlgaToRow(formData);
       
       if (editingItem) {
-        // Update existing row - extract row number from id
         const rowNumber = parseInt(editingItem.id.replace('row-', ''));
         const range = `A${rowNumber}:AC${rowNumber}`;
         await updateSheetRow(SHEET_NAMES.BASE_OLGA, range, rowData);
         toast.success("Registro actualizado exitosamente en Google Sheets");
       } else {
-        // Append new row
         await appendToSheet(SHEET_NAMES.BASE_OLGA, rowData);
         toast.success("Registro creado exitosamente en Google Sheets");
       }
       
-      // Refresh data
       await fetchData();
       setIsDialogOpen(false);
       setEditingItem(undefined);
@@ -175,7 +201,7 @@ export default function BaseOlgaPage() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 max-w-[95vw] mx-auto space-y-6">
       <div className="mb-8 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
