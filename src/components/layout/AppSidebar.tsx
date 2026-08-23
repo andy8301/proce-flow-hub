@@ -80,6 +80,12 @@ const menuItems = [
     url: "/reportes", 
     icon: BarChart3,
     description: "Informes y análisis"
+  },
+  {
+    title: "Consola de Datos",
+    url: "/consola",
+    icon: Database,
+    description: "Explorar cualquier hoja origen"
   }
 ];
 
