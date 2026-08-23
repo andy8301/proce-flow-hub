@@ -13,6 +13,7 @@ import ResolucionesPage from "./pages/Resoluciones";
 import FiscalizacionPage from "./pages/Fiscalizacion";
 import TutelasPage from "./pages/Tutelas";
 import ReportesPage from "./pages/Reportes";
+import ConsolaPage from "./pages/Consola";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
