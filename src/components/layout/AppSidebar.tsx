@@ -81,12 +81,6 @@ const menuItems = [
     icon: BarChart3,
     description: "Informes y análisis"
   },
-  {
-    title: "Consola de Datos",
-    url: "/consola",
-    icon: Database,
-    description: "Explorar cualquier hoja origen"
-  }
 ];
 
 export function AppSidebar() {
