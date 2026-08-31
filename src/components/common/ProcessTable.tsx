@@ -209,9 +209,36 @@ export function ProcessTable({ title, description, data, columns, onEdit }: Proc
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-4 text-sm text-muted-foreground">
-          <span>Mostrando {filteredData.length} de {data.length} procesos</span>
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 text-sm text-muted-foreground">
+          <span>
+            Mostrando {filteredData.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}
+            {"-"}
+            {Math.min(currentPage * PAGE_SIZE, filteredData.length)} de {filteredData.length} procesos
+            {filteredData.length !== data.length && ` (filtrados de ${data.length})`}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Anterior
+            </Button>
+            <span className="px-2">Página {currentPage} de {totalPages}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+            >
+              Siguiente
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
+
       </CardContent>
     </Card>
   );
