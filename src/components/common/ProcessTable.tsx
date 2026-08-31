@@ -157,7 +157,7 @@ export function ProcessTable({ title, description, data, columns, onEdit }: Proc
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.map((item) => (
+              {pageData.map((item) => (
                 <TableRow key={item.id} className="hover:bg-muted/50">
                   {columns.map((column) => (
                     <TableCell key={column.key.toString()}>
