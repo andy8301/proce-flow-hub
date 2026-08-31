@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Edit, Filter, Download, Search } from "lucide-react";
+import { Edit, Filter, Download, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { BaseProcess } from "@/types/processes";
+
+const PAGE_SIZE = 50;
 
 interface ProcessTableProps {
   title: string;
@@ -24,16 +26,31 @@ export function ProcessTable({ title, description, data, columns, onEdit }: Proc
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [semaforoFilter, setSemaforoFilter] = useState("all");
+  const [page, setPage] = useState(1);
 
-  const filteredData = data.filter(item => {
-    const matchesSearch = Object.values(item).some(value => 
-      value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    const matchesStatus = statusFilter === "all" || item.estado === statusFilter;
-    const matchesSemaforo = semaforoFilter === "all" || item.semaforo === semaforoFilter;
-    
-    return matchesSearch && matchesStatus && matchesSemaforo;
-  });
+  const filteredData = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return data.filter(item => {
+      const matchesSearch = !term || Object.values(item).some(value =>
+        value?.toString().toLowerCase().includes(term)
+      );
+      const matchesStatus = statusFilter === "all" || item.estado === statusFilter;
+      const matchesSemaforo = semaforoFilter === "all" || item.semaforo === semaforoFilter;
+
+      return matchesSearch && matchesStatus && matchesSemaforo;
+    });
+  }, [data, searchTerm, statusFilter, semaforoFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
+
+  useEffect(() => { setPage(1); }, [searchTerm, statusFilter, semaforoFilter, data]);
+
+  const currentPage = Math.min(page, totalPages);
+  const pageData = useMemo(
+    () => filteredData.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filteredData, currentPage]
+  );
+
 
   const getSemaforoVariant = (semaforo: string) => {
     switch (semaforo) {
