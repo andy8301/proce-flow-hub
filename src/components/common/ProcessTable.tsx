@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Edit, Filter, Download, Search } from "lucide-react";
+import { Edit, Filter, Download, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { BaseProcess } from "@/types/processes";
+
+const PAGE_SIZE = 50;
 
 interface ProcessTableProps {
   title: string;
@@ -24,16 +26,31 @@ export function ProcessTable({ title, description, data, columns, onEdit }: Proc
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [semaforoFilter, setSemaforoFilter] = useState("all");
+  const [page, setPage] = useState(1);
 
-  const filteredData = data.filter(item => {
-    const matchesSearch = Object.values(item).some(value => 
-      value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    const matchesStatus = statusFilter === "all" || item.estado === statusFilter;
-    const matchesSemaforo = semaforoFilter === "all" || item.semaforo === semaforoFilter;
-    
-    return matchesSearch && matchesStatus && matchesSemaforo;
-  });
+  const filteredData = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return data.filter(item => {
+      const matchesSearch = !term || Object.values(item).some(value =>
+        value?.toString().toLowerCase().includes(term)
+      );
+      const matchesStatus = statusFilter === "all" || item.estado === statusFilter;
+      const matchesSemaforo = semaforoFilter === "all" || item.semaforo === semaforoFilter;
+
+      return matchesSearch && matchesStatus && matchesSemaforo;
+    });
+  }, [data, searchTerm, statusFilter, semaforoFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
+
+  useEffect(() => { setPage(1); }, [searchTerm, statusFilter, semaforoFilter, data]);
+
+  const currentPage = Math.min(page, totalPages);
+  const pageData = useMemo(
+    () => filteredData.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filteredData, currentPage]
+  );
+
 
   const getSemaforoVariant = (semaforo: string) => {
     switch (semaforo) {
@@ -140,7 +157,7 @@ export function ProcessTable({ title, description, data, columns, onEdit }: Proc
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.map((item) => (
+              {pageData.map((item) => (
                 <TableRow key={item.id} className="hover:bg-muted/50">
                   {columns.map((column) => (
                     <TableCell key={column.key.toString()}>
@@ -166,9 +183,10 @@ export function ProcessTable({ title, description, data, columns, onEdit }: Proc
                       item.diasPendientes <= 7 ? 'text-warning font-semibold' :
                       'text-foreground'
                     }>
-                      {item.diasPendientes}
+                      {Number.isFinite(item.diasPendientes) ? item.diasPendientes : '-'}
                     </span>
                   </TableCell>
+
                   <TableCell>
                     <Button 
                       variant="ghost" 
@@ -191,9 +209,36 @@ export function ProcessTable({ title, description, data, columns, onEdit }: Proc
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-4 text-sm text-muted-foreground">
-          <span>Mostrando {filteredData.length} de {data.length} procesos</span>
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 text-sm text-muted-foreground">
+          <span>
+            Mostrando {filteredData.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}
+            {"-"}
+            {Math.min(currentPage * PAGE_SIZE, filteredData.length)} de {filteredData.length} procesos
+            {filteredData.length !== data.length && ` (filtrados de ${data.length})`}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Anterior
+            </Button>
+            <span className="px-2">Página {currentPage} de {totalPages}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+            >
+              Siguiente
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
+
       </CardContent>
     </Card>
   );
