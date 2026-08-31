@@ -183,9 +183,10 @@ export function ProcessTable({ title, description, data, columns, onEdit }: Proc
                       item.diasPendientes <= 7 ? 'text-warning font-semibold' :
                       'text-foreground'
                     }>
-                      {item.diasPendientes}
+                      {Number.isFinite(item.diasPendientes) ? item.diasPendientes : '-'}
                     </span>
                   </TableCell>
+
                   <TableCell>
                     <Button 
                       variant="ghost" 
