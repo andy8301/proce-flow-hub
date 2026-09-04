@@ -12,7 +12,9 @@ interface AppLayoutProps {
 
 
 export function AppLayout({ children }: AppLayoutProps) {
+  const { fullName, user, signOut } = useAuth();
   return (
+
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
