@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
+import { AuthProvider } from "./hooks/useAuth";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import BaseOlgaPage from "./pages/BaseOlga";
 import CorreosPage from "./pages/Correos";
@@ -13,6 +15,8 @@ import ResolucionesPage from "./pages/Resoluciones";
 import FiscalizacionPage from "./pages/Fiscalizacion";
 import TutelasPage from "./pages/Tutelas";
 import ReportesPage from "./pages/Reportes";
+import AccesosPage from "./pages/Accesos";
+import AuthPage from "./pages/Auth";
 
 import NotFound from "./pages/NotFound";
 
@@ -24,23 +28,35 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AppLayout>
+        <AuthProvider>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/base-olga" element={<BaseOlgaPage />} />
-            <Route path="/correos" element={<CorreosPage />} />
-            <Route path="/nexura" element={<NexuraPage />} />
-            <Route path="/traslados" element={<TrasladosPage />} />
-            <Route path="/resoluciones" element={<ResolucionesPage />} />
-            <Route path="/fiscalizacion" element={<FiscalizacionPage />} />
-            <Route path="/tutelas" element={<TutelasPage />} />
-            <Route path="/reportes" element={<ReportesPage />} />
-            
+            <Route path="/auth" element={<AuthPage />} />
+            <Route
+              path="*"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/base-olga" element={<BaseOlgaPage />} />
+                      <Route path="/correos" element={<CorreosPage />} />
+                      <Route path="/nexura" element={<NexuraPage />} />
+                      <Route path="/traslados" element={<TrasladosPage />} />
+                      <Route path="/resoluciones" element={<ResolucionesPage />} />
+                      <Route path="/fiscalizacion" element={<FiscalizacionPage />} />
+                      <Route path="/tutelas" element={<TutelasPage />} />
+                      <Route path="/reportes" element={<ReportesPage />} />
+                      <Route path="/accesos" element={<AccesosPage />} />
 
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
           </Routes>
-        </AppLayout>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
