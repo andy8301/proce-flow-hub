@@ -35,6 +35,25 @@ export default function AuthPage() {
     navigate("/", { replace: true });
   };
 
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast({ title: "Correo requerido", description: "Ingresa tu correo para enviarte el enlace de recuperación", variant: "destructive" });
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setBusy(false);
+    if (error) {
+      toast({ title: "No se pudo enviar", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Correo enviado", description: "Revisa tu bandeja para restablecer tu contraseña." });
+    setView("login");
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) {
