@@ -1,16 +1,20 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { Bell, User, Search } from "lucide-react";
+import { Bell, User, Search, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
+
 export function AppLayout({ children }: AppLayoutProps) {
+  const { fullName, user, signOut } = useAuth();
   return (
+
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
@@ -43,15 +47,19 @@ export function AppLayout({ children }: AppLayoutProps) {
               </Button>
 
               {/* User Menu */}
-              <Button variant="ghost" size="sm" className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
                   <User className="w-4 h-4 text-primary-foreground" />
                 </div>
                 <div className="text-left hidden sm:block">
-                  <p className="text-sm font-medium">Admin Usuario</p>
-                  <p className="text-xs text-muted-foreground">Administrador</p>
+                  <p className="text-sm font-medium">{fullName || "Usuario"}</p>
+                  <p className="text-xs text-muted-foreground">{user?.email}</p>
                 </div>
-              </Button>
+                <Button variant="ghost" size="sm" onClick={signOut} title="Cerrar sesión">
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </div>
+
             </div>
           </header>
 

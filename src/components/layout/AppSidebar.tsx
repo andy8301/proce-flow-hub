@@ -81,7 +81,14 @@ const menuItems = [
     icon: BarChart3,
     description: "Informes y análisis"
   },
+  { 
+    title: "Registro de Accesos", 
+    url: "/accesos", 
+    icon: Users,
+    description: "Quién ingresó, fecha y hora"
+  },
 ];
+
 
 export function AppSidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
